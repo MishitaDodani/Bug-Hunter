@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bug Hunter</title>
+<style>
+:root{--bg:#e8e5e0;--card:#f7f5f2;--line:#d3cfc8;--ink:#2b2926;--dim:#7a756d;--or:#d9772b;--ord:#b85f1a;--code:#2a2927;--bar:#383633;--ok:#6f9a4a;--bad:#c8473f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;display:flex;justify-content:center;padding:22px 14px}
+main{width:100%;max-width:760px}
+h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2rem,6vw,2.8rem);font-weight:700;letter-spacing:-.01em;text-align:center}
+.sub{text-align:center;color:var(--dim);margin:4px 0 0;padding-bottom:14px;border-bottom:3px double var(--line);font-size:.95rem}
+.hud{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;margin:16px 0 10px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:8px;font-size:.95rem}
+.hud .k{color:var(--dim);margin-right:6px}
+.hearts{font-size:1.35rem;letter-spacing:3px;color:var(--bad);line-height:1}.hearts .x{color:#bdb8b0}
+#streak b{display:inline-block;min-width:1.2em}
+#streak.pop{animation:pop .35s}
+@keyframes pop{40%{transform:scale(1.3)}}
+.timer{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.track{flex:1;height:10px;background:#d3cfc8;border-radius:5px;overflow:hidden}
+#fill{height:100%;width:100%;background:var(--or);border-radius:5px}
+#fill.low{background:var(--bad)}
+#tt{width:3ch;text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:.9rem}
+.win{background:var(--code);border-radius:8px;box-shadow:0 2px 0 var(--line),0 8px 24px rgba(40,30,20,.18);overflow:hidden}
+.top{display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--bar);font-size:.8rem;color:#a29c92;font-family:Menlo,Consolas,monospace}
+.dot{width:10px;height:10px;border-radius:50%;background:#6a665f}.dot:first-child{background:var(--or)}
+.top .file{margin-left:8px}.top .lang{margin-left:auto;color:var(--or)}
+#code{padding:8px 0;overflow-x:auto;font-family:Menlo,Consolas,"DejaVu Sans Mono",monospace}
+.ln{display:flex;min-width:max-content;width:100%;align-items:center;cursor:pointer;border-left:3px solid transparent;font-size:.92rem;line-height:2.1;color:#e6e1d8;outline:none;transition:background .15s,border-color .15s,padding-left .15s}
+.ln .n{width:44px;flex:none;text-align:right;padding-right:14px;color:#77716a;user-select:none;transition:color .15s}
+.ln .t{white-space:pre;padding-right:20px}
+.ln:hover,.ln:focus-visible{background:rgba(217,119,43,.16);border-left-color:var(--or);padding-left:6px}
+.ln:hover .n,.ln:focus-visible .n{color:var(--or)}
+#code.done .ln{cursor:default;padding-left:0}
+#code.done .ln:hover{background:none;border-left-color:transparent}
+#code.done .ln:hover .n{color:#77716a}
+.ln.ok,#code.done .ln.ok:hover{background:rgba(111,154,74,.25);border-left-color:var(--ok)}
+.ln.ok .n,#code.done .ln.ok:hover .n{color:var(--ok)}
+.ln.no,#code.done .ln.no:hover{background:rgba(200,71,63,.25);border-left-color:var(--bad);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+#fb{margin-top:14px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;min-height:96px}
+#fb.ok{border-left-color:var(--ok)}#fb.no{border-left-color:var(--bad)}
+#fb .hint{color:var(--dim)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.tag{font-weight:700}
+.badge{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;color:#fff}
+.badge.critical{background:#9b1c1c}.badge.high{background:#c2410c}.badge.medium{background:#a16207}
+#fb p{margin:8px 0 0;line-height:1.55;font-size:.92rem}
+#fb .sevmsg{color:var(--dim);font-size:.85rem;margin-top:6px}
+button{font:inherit;font-weight:600;cursor:pointer;color:#fff;background:var(--or);border:0;border-bottom:3px solid var(--ord);border-radius:6px;padding:9px 20px;margin-top:12px;transition:background .15s,transform .15s}
+button:hover,button:focus-visible{background:#e5842f;transform:translateY(-1px);outline:none}
+.end{text-align:center;padding:28px 16px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+.end h2{font-family:Georgia,serif;margin:0 0 4px;font-size:1.9rem}
+.end .rank{color:var(--ord);font-weight:600}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin:18px 0 6px}
+.stats div{min-width:110px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.stats b{display:block;font-size:1.5rem}.stats span{color:var(--dim);font-size:.8rem}
+.hide{display:none}
+@media(max-width:520px){.ln{font-size:.8rem}.ln .n{width:34px;padding-right:10px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.screen{animation:fin .45s ease both}
+@keyframes fin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.win,#fb{transition:opacity .22s ease,transform .22s ease}
+#game.out .win,#game.out #fb{opacity:0;transform:translateY(10px)}
+#term{margin:0;padding:18px 16px;min-height:200px;color:#e6e1d8;font:.92rem/1.8 Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+#term::after{content:"";display:inline-block;width:.6em;height:1.1em;background:var(--or);vertical-align:text-bottom;margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.startbar{text-align:center;margin-top:8px}
+.startbar button{font-size:1.1rem;padding:13px 36px}
+#cf{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+@media(max-width:520px){
+body{padding:14px 10px}
+.hud{display:grid;grid-template-columns:1fr 1fr;font-size:.9rem}
+.hud>span:nth-child(even){justify-self:end}
+.ln{line-height:2.6;font-size:.8rem}
+#term{font-size:.8rem;min-height:230px}
+#fb button,.startbar button,.end button{width:100%;min-height:46px}
+.stats div{flex:1 1 40%;min-width:0}
+.sub{font-size:.88rem}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bug Hunter</h1>
+  <p class="sub">One line in each snippet is vulnerable. Find it before the clock runs out.</p>
+  <div id="start" class="screen"><div class="win"><div class="top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="file">terminal</span><span class="lang">bash</span></div><pre id="term"></pre></div><div class="startbar"><button id="go">Start hunt</button></div></div>
+  <div id="game" class="screen hide">
+    <div class="hud">
+      <span><span class="k">Round</span><b id="rd"></b></span>
+      <span class="hearts" id="hp" aria-label="Lives"></span>
+      <span id="streak"><span class="k">Streak</span>🔥 <b id="st">0</b></span>
+      <span><span class="k">Score</span><b id="sc">0</b></span>
+    </div>
+    <div class="timer"><div class="track"><div id="fill"></div></div><span id="tt">30</span></div>
+    <div class="win">
+      <div class="top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="file" id="file"></span><span class="lang" id="lang"></span></div>
+      <div id="code"></div>
+    </div>
+    <div id="fb"></div>
+  </div>
+  <div id="end" class="end screen hide"></div>
+  <canvas id="cf"></canvas>
+</main>
+<script>
+const ROUNDS=[
+{lang:"JavaScript",file:"users.js",type:"SQL injection",bug:1,lines:[
+`const id = req.query.id;`,
+`const sql = "SELECT * FROM users WHERE id = " + id;`,
+`db.query(sql, (err, rows) => {`,
+`  res.json(rows);`,
+`});`],why:"User input is concatenated straight into the query, so an attacker can send 1 OR 1=1 or worse. Use parameterized queries: db.query('... WHERE id = ?', [id])."},
+{lang:"Python",file:"lookup.py",type:"SQL injection",bug:2,lines:[
+`def get_user(name):`,
+`    cur = conn.cursor()`,
+`    cur.execute(f"SELECT * FROM users WHERE name = '{name}'")`,
+`    return cur.fetchone()`],why:"The f-string drops user input into the SQL text. A name like ' OR '1'='1 returns every row. Pass values separately: cur.execute('... WHERE name = %s', (name,))."},
+{lang:"SQL",file:"find_user.sql",type:"SQL injection",bug:2,lines:[
+`CREATE PROCEDURE find_user(IN uname VARCHAR(50))`,
+`BEGIN`,
+`  SET @q = CONCAT('SELECT * FROM users WHERE name = ''', uname, '''');`,
+`  PREPARE stmt FROM @q;`,
+`  EXECUTE stmt;`,
+`END`],why:"Dynamic SQL built with CONCAT is still injectable inside a stored procedure. Use a placeholder (WHERE name = ?) and EXECUTE stmt USING @name."},
+{lang:"JavaScript",file:"welcome.js",type:"Cross-site scripting (XSS)",bug:2,lines:[
+`const params = new URLSearchParams(location.search);`,
+`const name = params.get("name");`,
+`document.getElementById("hello").innerHTML = "Welcome, " + name;`,
+`console.log("greeting rendered");`],why:"innerHTML parses attacker-controlled text as HTML, so ?name=<img src=x onerror=...> runs script. Use textContent, or sanitize the input."},
+{lang:"PHP",file:"comments.php",type:"Cross-site scripting (XSS)",bug:3,lines:[
+`<?php`,
+`$comment = $_POST['comment'];`,
+`save_comment($comment);`,
+`echo "<p>" . $comment . "</p>";`],why:"The comment is echoed back with no output encoding, so stored script tags will run in every visitor's browser. Wrap it: htmlspecialchars($comment, ENT_QUOTES, 'UTF-8')."},
+{lang:"Python",file:"config.py",type:"Hard-coded password",bug:2,lines:[
+`import requests`,
+`API_URL = "https://api.example.com"`,
+`ADMIN_PASSWORD = "SuperSecret123!"`,
+`TIMEOUT = 10`],why:"Credentials in source code leak through repos, backups and logs, and can't be rotated without a redeploy. Load secrets from environment variables or a secrets manager."},
+{lang:"PHP",file:"db.php",type:"Hard-coded password",bug:2,lines:[
+`<?php`,
+`error_reporting(E_ALL);`,
+`$db = new mysqli("localhost", "root", "P@ssw0rd!", "shop");`,
+`if ($db->connect_error) { die("DB error"); }`],why:"The database root password is written into the code. Anyone with repo access owns the database. Read it from getenv() and use a least-privilege account."},
+{lang:"Python",file:"ping.py",type:"Command injection",bug:2,lines:[
+`import os`,
+`host = input("Host to ping: ")`,
+`os.system("ping -c 1 " + host)`,
+`print("Done")`],why:"The shell sees whatever the user typed, so 8.8.8.8; rm -rf ~ runs a second command. Use subprocess.run(['ping','-c','1',host]) with no shell, and validate the host."},
+{lang:"PHP",file:"viewer.php",type:"Command injection",bug:3,lines:[
+`<?php`,
+`$file = $_GET['file'];`,
+`$size = strlen($file);`,
+`echo shell_exec("cat " . $file);`],why:"Unsanitized input goes into a shell command, so ?file=x;whoami executes arbitrary commands. Avoid the shell: use file_get_contents() with a strict allowlist of paths."},
+{lang:"Python",file:"auth.py",type:"Weak hashing (MD5)",bug:2,lines:[
+`import hashlib`,
+`def store_password(pw):`,
+`    digest = hashlib.md5(pw.encode()).hexdigest()`,
+`    db.save(digest)`],why:"MD5 is fast and broken, so leaked hashes fall to rainbow tables and GPU cracking in minutes. Use a slow, salted algorithm: bcrypt, scrypt or Argon2."},
+{lang:"JavaScript",file:"hash.js",type:"Weak hashing (MD5)",bug:2,lines:[
+`const crypto = require("crypto");`,
+`function hashPw(pw) {`,
+`  return crypto.createHash("md5").update(pw).digest("hex");`,
+`}`],why:"MD5 with no salt is trivial to crack. Switch to bcrypt or Argon2, which add salts and are deliberately expensive to compute."},
+{lang:"JavaScript",file:"server.js",type:"Missing authentication",bug:2,lines:[
+`app.use(express.json());`,
+`app.get("/profile", requireAuth, showProfile);`,
+`app.delete("/admin/users/:id", deleteUser);`,
+`app.listen(3000);`],why:"The admin delete route has no auth middleware, so anyone on the internet can remove users. Add requireAuth plus an admin role check to every privileged route."}
+];
+const SEV={"SQL injection":"critical","Command injection":"critical","Missing authentication":"critical","Cross-site scripting (XSS)":"high","Hard-coded password":"high","Weak hashing (MD5)":"medium"};
+const SEVMSG={critical:"Critical: attackers can read or destroy data, or take over the system.",high:"High: attackers can steal sessions or secrets and escalate from there.",medium:"Medium: exploitable, but usually needs another weakness or a leaked database first."};
+const TIME=30,$=id=>document.getElementById(id);
+let deck,i,score,hearts,streak,best,correct,locked,t0,raf;
+function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
+function hud(){
+  $("sc").textContent=score;$("st").textContent=streak;
+  $("hp").innerHTML=[0,1,2].map(n=>n<hearts?"♥":'<span class="x">♥</span>').join("");
+}
+function start(){
+  deck=shuffle(ROUNDS).slice(0,10);i=0;score=0;hearts=3;streak=0;best=0;correct=0;
+  typeId++;$("start").classList.add("hide");$("end").classList.add("hide");$("game").classList.remove("hide");show();
+}
+function left(){return Math.max(0,TIME-(performance.now()-t0)/1000)}
+function tick(){
+  const l=left();
+  $("fill").style.width=(l/TIME*100)+"%";$("fill").classList.toggle("low",l<=10);
+  $("tt").textContent=Math.ceil(l);
+  if(l<=0)answer(-1);else raf=requestAnimationFrame(tick);
+}
+function show(){
+  locked=false;const r=deck[i];
+  $("rd").textContent=(i+1)+" / 10";hud();
+  $("file").textContent=r.file;$("lang").textContent=r.lang;
+  const c=$("code");c.className="";c.innerHTML="";
+  r.lines.forEach((t,k)=>{
+    const d=document.createElement("div");d.className="ln";d.tabIndex=0;d.setAttribute("role","button");
+    const n=document.createElement("span");n.className="n";n.textContent=k+1;
+    const s=document.createElement("span");s.className="t";s.textContent=t;
+    d.append(n,s);
+    const pick=()=>answer(k,d);
+    d.onclick=pick;d.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick()}};
+    c.appendChild(d);
+  });
+  const f=$("fb");f.className="";f.innerHTML='<div class="hint">Click the line you think is vulnerable. Faster answers earn a bigger bonus.</div>';
+  t0=performance.now();cancelAnimationFrame(raf);tick();
+}
+function answer(k,el){
+  if(locked)return;locked=true;cancelAnimationFrame(raf);
+  const r=deck[i],l=left(),ok=k===r.bug,rows=$("code").children,sev=SEV[r.type];
+  $("code").classList.add("done");
+  let pts=0,bonus=0;
+  if(ok){
+    bonus=Math.round(l/TIME*100);pts=100+bonus;score+=pts;correct++;streak++;best=Math.max(best,streak);el.classList.add("ok");
+    const s=$("streak");s.classList.remove("pop");void s.offsetWidth;s.classList.add("pop");
+  }else{
+    hearts--;streak=0;rows[r.bug].classList.add("ok");if(el)el.classList.add("no");
+  }
+  hud();
+  const f=$("fb");f.className=ok?"ok":"no";f.innerHTML="";
+  const row=document.createElement("div");row.className="row";
+  const tag=document.createElement("span");tag.className="tag";
+  tag.textContent=ok?"Bug found: "+r.type+" (+"+pts+", includes "+bonus+" speed bonus)":(k<0?"Time's up. ":"Missed. ")+"The bug is on line "+(r.bug+1)+": "+r.type;
+  const badge=document.createElement("span");badge.className="badge "+sev;badge.textContent=sev[0].toUpperCase()+sev.slice(1);
+  row.append(tag,badge);
+  const sm=document.createElement("div");sm.className="sevmsg";sm.textContent=SEVMSG[sev];
+  const p=document.createElement("p");p.textContent=r.why;
+  const over=hearts<=0,last=i>=9;
+  const b=document.createElement("button");b.textContent=(over||last)?"See results":"Next round";
+  b.onclick=()=>{if(over||last)return end(over);b.disabled=true;$("game").classList.add("out");setTimeout(()=>{i++;show();$("game").classList.remove("out")},230)};
+  f.append(row,sm,p,b);b.focus({preventScroll:true});
+}
+function end(over){
+  $("game").classList.add("hide");
+  const n=over?i+1:10,acc=Math.round(correct/n*100);
+  const rk=acc>=90?["Elite pen tester","Nothing slipped past you. Production is safe."]:acc>=60?["Bug hunter","Solid instincts. A few bugs got through, so read the explanations and go again."]:["Script kiddie","You're still learning the patterns. Run another hunt and watch for the telltale lines."];
+  const e=$("end");e.classList.remove("hide");
+  e.innerHTML='<h2>'+(over?"Game over":"Hunt complete")+'</h2><div class="rank">'+rk[0]+'</div><p>'+(over?"You ran out of lives after "+n+" of 10 rounds. ":"")+rk[1]+'</p><div class="stats"><div><b>'+score+'</b><span>Score</span></div><div><b>'+acc+'%</b><span>Accuracy ('+correct+'/'+n+')</span></div><div><b>🔥 '+best+'</b><span>Best streak</span></div></div><button id="again">Play again</button>';
+  $("again").onclick=start;
+  if(acc>=80)confetti();
+}
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const c=$("cf"),x=c.getContext("2d"),W=c.width=innerWidth,H=c.height=innerHeight;
+  const cols=["#d9772b","#6f9a4a","#2b2926","#e8b04a","#b85f1a"];
+  const ps=Array.from({length:150},()=>({x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*4,vy:2+Math.random()*4,s:6+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
+  let f=0;
+  (function go(){
+    x.clearRect(0,0,W,H);let alive=0;
+    ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.r+=p.vr;if(p.y<H+20)alive++;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);x.restore()});
+    if(alive&&++f<420)requestAnimationFrame(go);else x.clearRect(0,0,W,H);
+  })();
+}
+let typeId=0;
+const INTRO=["$ ./bug_hunter --init","> loading vulnerability database... ok","> 12 snippets / 4 languages / 6 bug classes","> rules: 3 lives, 30 seconds per round","> faster answers earn bonus points","> find the vulnerable line. good luck, hunter."];
+function intro(){
+  const id=++typeId,pre=$("term");let li=0,ci=0;
+  $("go").onclick=start;
+  (function step(){
+    if(id!==typeId||li>=INTRO.length)return;
+    ci++;
+    pre.textContent=INTRO.slice(0,li).concat(INTRO[li].slice(0,ci)).join("\n");
+    if(ci>=INTRO[li].length){li++;ci=0;setTimeout(step,300)}else setTimeout(step,24);
+  })();
+}
+intro();
+</script>
+</body>
+</html>
